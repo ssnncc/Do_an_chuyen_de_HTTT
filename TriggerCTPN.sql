@@ -1,0 +1,65 @@
+﻿USE [QLVT_DATHANG]
+GO
+/****** Object:  Trigger [dbo].[TR_AfterDelete_CTPN]    Script Date: 08-May-20 12:26:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER TRIGGER [dbo].[TR_AfterDelete_CTPN]
+	ON [dbo].[CTPN]
+	AFTER DELETE
+AS
+BEGIN
+	UPDATE [dbo].[Vattu]
+	SET SOLUONGTON=SOLUONGTON-( SELECT SOLUONG FROM deleted)
+	WHERE MAVT= (SELECT MAVT FROM deleted)
+END
+
+
+GO
+/****** Object:  Trigger [dbo].[TR_AfterInsert_CTPN]    Script Date: 08-May-20 12:26:32 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER TRIGGER [dbo].[TR_AfterInsert_CTPN]
+	ON [dbo].[CTPN]
+	AFTER INSERT
+AS
+BEGIN
+	UPDATE [dbo].[Vattu]
+	SET SOLUONGTON=SOLUONGTON + ( SELECT SOLUONG FROM inserted)
+	WHERE MAVT= (SELECT MAVT FROM inserted)
+END
+
+GO
+/****** Object:  Trigger [dbo].[TR_AfterUpdate_CTPN]    Script Date: 08-May-20 12:26:58 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+ALTER TRIGGER [dbo].[TR_AfterUpdate_CTPN]
+	ON [dbo].[CTPN]
+	AFTER UPDATE
+AS
+BEGIN
+	IF(UPDATE(SOLUONG))
+	BEGIN
+		UPDATE Vattu
+		SET SOLUONGTON=SOLUONGTON-(SELECT SOLUONG FROM deleted)+(SELECT SOLUONG FROM inserted)
+		WHERE MAVT=(SELECT MAVT FROM inserted)
+	END
+-- Trường hợp hiệu chỉnh field MAVT CŨNG sẽ ảnh hưởng tới số lượng tồn
+	IF(UPDATE(MAVT))
+	BEGIN
+		UPDATE Vattu
+		SET SOLUONGTON = SOLUONGTON +(SELECT SOLUONG FROM inserted)
+		WHERE MAVT=(SELECT MAVT FROM inserted)
+		UPDATE [dbo].[Vattu]
+		SET SOLUONGTON=SOLUONGTON-( SELECT SOLUONG FROM deleted)
+		WHERE MAVT= (SELECT MAVT FROM deleted)
+	END
+END
